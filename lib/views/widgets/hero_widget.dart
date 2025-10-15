@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_app/views/pages/card_show.dart';
 
 class HeroWidget extends StatefulWidget {
-  const HeroWidget({super.key});
+  final String collectionKeyfromHome;
+  const HeroWidget({super.key, required this.collectionKeyfromHome});
 
   @override
   State<HeroWidget> createState() => _HeroWidgetState();
@@ -15,7 +16,10 @@ class _HeroWidgetState extends State<HeroWidget> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const CardShow()),
+          MaterialPageRoute(
+            builder: (context) =>
+                CardShow(collectionKeyfromHero: widget.collectionKeyfromHome),
+          ),
         );
       },
       splashColor: const Color.fromARGB(255, 0, 121, 109),

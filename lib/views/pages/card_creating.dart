@@ -10,12 +10,45 @@ class CreatingCard extends StatefulWidget {
   State<CreatingCard> createState() => _CreatingCardState();
 }
 
+Future<void> printAllSharedPreferences() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final Set<String> keys = prefs.getKeys();
+
+  if (keys.isEmpty) {
+    print('SharedPreferences is empty.');
+    return;
+  }
+  print('--- Printing all SharedPreferences ---');
+  for (String key in keys) {
+    final dynamic value = prefs.get(key);
+    print('$key: $value (${value.runtimeType})');
+  }
+  print('------------------------------------');
+}
+
 class _CreatingCardState extends State<CreatingCard> {
   final TextEditingController _frontController = TextEditingController();
   final TextEditingController _backController = TextEditingController();
-  final List<String> _collections = ['Collection 1', 'Collection 2'];
+  List<String> _collections = [];
   String? _selectedCollection;
   int? countcards;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCollections();
+  }
+
+  Future<void> _loadCollections() async {
+    final prefs = await SharedPreferences.getInstance();
+    final keys = prefs.getKeys().where((key) => key != 'isDarkKey').toList();
+
+    setState(() {
+      _collections = keys;
+      _isLoading = false;
+    });
+  }
 
   Future<bool> _saveCard() async {
     if (_frontController.text.isEmpty ||
@@ -72,54 +105,57 @@ class _CreatingCardState extends State<CreatingCard> {
                   'Front: ${_frontController.text}, Back: ${_backController.text}, Collection:$_selectedCollection',
                 );
                 print(countcards);
+                printAllSharedPreferences();
                 Navigator.pop(context);
               }
             },
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(14.0),
-        child: Column(
-          children: [
-            DropdownButtonFormField<String>(
-              decoration: const InputDecoration(
-                labelText: 'Select Collection',
-                border: OutlineInputBorder(),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: const EdgeInsets.all(14.0),
+              child: Column(
+                children: [
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(
+                      labelText: 'Select Collection',
+                      border: OutlineInputBorder(),
+                    ),
+                    value: _selectedCollection,
+                    hint: const Text('Collection'),
+                    items: _collections.map((String collection) {
+                      return DropdownMenuItem<String>(
+                        value: collection,
+                        child: Text(collection),
+                      );
+                    }).toList(),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        _selectedCollection = newValue;
+                      });
+                    },
+                  ),
+                  SizedBox(height: 14),
+                  TextField(
+                    controller: _frontController,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Front Text',
+                    ),
+                  ),
+                  SizedBox(height: 14),
+                  TextField(
+                    controller: _backController,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Back Text',
+                    ),
+                  ),
+                ],
               ),
-              value: _selectedCollection,
-              hint: const Text('Collection'),
-              items: _collections.map((String collection) {
-                return DropdownMenuItem<String>(
-                  value: collection,
-                  child: Text(collection),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                setState(() {
-                  _selectedCollection = newValue;
-                });
-              },
             ),
-            SizedBox(height: 14),
-            TextField(
-              controller: _frontController,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Front Text',
-              ),
-            ),
-            SizedBox(height: 14),
-            TextField(
-              controller: _backController,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Back Text',
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

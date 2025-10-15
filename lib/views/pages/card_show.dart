@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CardShow extends StatefulWidget {
-  const CardShow({super.key});
+  final String collectionKeyfromHero;
+  const CardShow({super.key, required this.collectionKeyfromHero});
 
   @override
   State<CardShow> createState() => _CardShowState();
@@ -26,7 +27,7 @@ class _CardShowState extends State<CardShow> {
 
   Future<void> _loadCards() async {
     final prefs = await SharedPreferences.getInstance();
-    const collectionKey = 'Collection 1';
+    final collectionKey = widget.collectionKeyfromHero;
 
     final List<String> cardStrings = prefs.getStringList(collectionKey) ?? [];
 
@@ -105,10 +106,14 @@ class _CardShowState extends State<CardShow> {
             child: Visibility(
               visible: showButton == 'shown',
               child: IconButton(
-                icon: Icon(Icons.navigate_next, color: Colors.white, size: 30),
-                onPressed: () {
-                  _goToNextCard();
-                },
+                icon: Icon(
+                  _isFinished ? Icons.check : Icons.navigate_next,
+                  color: Colors.white,
+                  size: 30,
+                ),
+                onPressed: _isFinished
+                    ? () => Navigator.of(context).pop()
+                    : _goToNextCard,
               ),
             ),
           ),
