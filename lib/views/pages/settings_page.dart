@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/views/pages/collection_creating.dart';
 import 'package:flutter_app/views/widgets/setting_app_bar_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -26,21 +25,21 @@ class _SettingsPageState extends State<SettingsPage> {
     final Set<String> keys = prefs.getKeys();
 
     if (keys.isEmpty) {
-      print('SharedPreferences is empty.');
+      debugPrint('SharedPreferences is empty.');
       return;
     }
-    print('--- Printing all SharedPreferences ---');
+    debugPrint('--- Printing all SharedPreferences ---');
     for (String key in keys) {
       final dynamic value = prefs.get(key);
-      print('$key: $value (${value.runtimeType})');
+      debugPrint('$key: $value (${value.runtimeType})');
     }
-    print('------------------------------------');
+    debugPrint('------------------------------------');
   }
 
   Future<void> deleteAllPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
-    print('Shared Preferences cleaned.');
+    debugPrint('Shared Preferences cleaned.');
   }
 
   @override
@@ -86,18 +85,6 @@ class _SettingsPageState extends State<SettingsPage> {
                 child: const Text('Reset your data'),
               ),
               SizedBox(height: 10),
-              //create new collection button
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => CollectionCreating(),
-                    ),
-                  );
-                },
-                child: const Text('Create new Collection'),
-              ),
 
               CheckboxListTile.adaptive(
                 title: const Text('Enable Developer Mode'),

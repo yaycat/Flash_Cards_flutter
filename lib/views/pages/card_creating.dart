@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -66,9 +68,8 @@ class _CreatingCardState extends State<CreatingCard> {
 
     final prefs = await SharedPreferences.getInstance();
 
-    final String _selectedCollectionKey = _selectedCollection!;
-    final List<String> cards =
-        prefs.getStringList(_selectedCollectionKey) ?? [];
+    final String selectedCollectionKey = _selectedCollection!;
+    final List<String> cards = prefs.getStringList(selectedCollectionKey) ?? [];
 
     final cardData = {
       'front': _frontController.text,
@@ -77,9 +78,47 @@ class _CreatingCardState extends State<CreatingCard> {
     };
     cards.add(jsonEncode(cardData));
 
-    await prefs.setStringList(_selectedCollectionKey, cards);
-    countcards = cards.length;
-    return true;
+    final user = FirebaseAuth.instance.currentUser?.uid;
+
+    final cardDataForFirebase = {
+      'front': _frontController.text,
+      'back': _backController.text,
+    };
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text('User not authenticated. Please log in.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return false;
+    }
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user)
+          .collection('collections')
+          .doc(selectedCollectionKey)
+          .update({
+            'cards': FieldValue.arrayUnion([cardDataForFirebase]),
+          });
+
+      countcards = cards.length;
+      await prefs.setStringList(selectedCollectionKey, cards);
+      return true;
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text('Error saving card to Firestore: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return false;
+    }
   }
 
   @override

@@ -1,7 +1,7 @@
-import 'dart:math' as developer;
-
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CollectionCreating extends StatefulWidget {
   const CollectionCreating({super.key});
@@ -48,6 +48,36 @@ class _CollectionCreatingState extends State<CollectionCreating> {
 
     final prefs = await SharedPreferences.getInstance();
     final String collectionName = _collectionNameController.text;
+    final user = FirebaseAuth.instance.currentUser?.uid;
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text('User not authenticated. Please log in.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return false;
+    }
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user)
+          .collection('collections')
+          .doc(collectionName)
+          .set({' ': ' '});
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text('Error saving to Firestore: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return false;
+    }
 
     if (prefs.containsKey(collectionName)) {
       ScaffoldMessenger.of(context).showSnackBar(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/data/notifiers/notifier.dart';
+import 'package:flutter_app/views/pages/collection_creating.dart';
 import 'package:flutter_app/views/pages/settings_page.dart';
 
 class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
@@ -20,6 +21,16 @@ class _CustomAppBarState extends State<CustomAppBar> {
       builder: (context, value, child) {
         return AppBar(
           title: Text('Flash Cards'),
+          centerTitle: true,
+          leading: IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => CollectionCreating()),
+              );
+            },
+            icon: const Icon(Icons.add),
+          ),
           actions: [
             IconButton(
               onPressed: () {

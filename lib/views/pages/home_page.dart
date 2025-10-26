@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_app/views/pages/card_preview.dart';
 import 'package:flutter_app/views/widgets/hero_widget.dart';
@@ -21,6 +23,65 @@ class _HomePageState extends State<HomePage> {
   String? collectionKey;
   bool _isLoadingCollection = true;
   bool? _isCollectionEmpty;
+
+  Future<void> _sharedPreferencesUpdate() async {
+    // final prefs = await SharedPreferences.getInstance();
+    // await prefs.clear();
+
+    final user = FirebaseAuth.instance.currentUser?.uid;
+    final prefs = await SharedPreferences.getInstance();
+    debugPrint('[_sharedPreferencesUpdate] currentUser uid = $user');
+
+    if (user == null) {
+      debugPrint('[_sharedPreferencesUpdate] Нет залогиненного пользователя.');
+      return;
+    }
+
+    final query = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user)
+        .collection('collections')
+        .get();
+
+    debugPrint(('Document ID: ${query.docs.first.data()}'));
+    debugPrint('--- All documents in collections ---');
+
+    final keys = prefs.getKeys();
+
+    for (String key in keys) {
+      if (key != 'isDarkKey') {
+        await prefs.remove(key);
+      }
+      debugPrint('SharedPreferences after removal: ${prefs.getKeys()}');
+    }
+
+    for (final doc in query.docs) {
+      debugPrint('------------------------------------');
+      debugPrint('Document ID2: ${doc.id}');
+      debugPrint('Data: ${doc.data()}');
+      debugPrint('Data type: ${doc.data().runtimeType}');
+
+      final String collectionKey = doc.id;
+      final List<String> cardStrings = [];
+      final data = doc.data();
+      if (data.containsKey('cards')) {
+        final cards = data['cards'] as List<dynamic>;
+        debugPrint('Cards type: ${cards.runtimeType}');
+        debugPrint('cards: $cards');
+        for (final card in cards) {
+          final cardMap = card as Map<String, dynamic>;
+          debugPrint('Card map: $cardMap');
+          final cardString = jsonEncode(cardMap);
+          cardStrings.add(cardString);
+          debugPrint('Card string: $cardString');
+          await prefs.setStringList(collectionKey, cardStrings);
+          debugPrint(
+            'Saved card to SharedPreferences under $collectionKey -----------------------------',
+          );
+        }
+      }
+    }
+  }
 
   Future<void> printAllSharedPreferences() async {
     // Получаем экземпляр SharedPreferences
@@ -57,12 +118,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _loadCards();
-  }
-
   Future<void> _loadCards() async {
     final prefs = await SharedPreferences.getInstance();
     final keys = prefs.getKeys().where((key) => key != 'isDarkKey').toList();
@@ -93,6 +148,13 @@ class _HomePageState extends State<HomePage> {
       _isLoadingCard = false;
       _isLoadingCollection = false;
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCards();
+    _sharedPreferencesUpdate();
   }
 
   @override
@@ -149,23 +211,30 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       _isLoadingCollection
                           ? const CircularProgressIndicator()
-                          : DropdownButton(
-                              value: menuItemCollection,
-                              hint: Text('Select Collection'),
-                              items: _collections
-                                  .map(
-                                    (collection) => DropdownMenuItem(
-                                      value: collection,
-                                      child: Text(collection),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: (value) {
-                                setState(() {
-                                  menuItemCollection = value;
-                                  _loadCards();
-                                });
-                              },
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                SizedBox(width: 20),
+                                DropdownButton(
+                                  menuWidth: double.infinity,
+                                  value: menuItemCollection,
+                                  hint: Text('Select Collection'),
+                                  items: _collections
+                                      .map(
+                                        (collection) => DropdownMenuItem(
+                                          value: collection,
+                                          child: Text(collection),
+                                        ),
+                                      )
+                                      .toList(),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      menuItemCollection = value;
+                                      _loadCards();
+                                    });
+                                  },
+                                ),
+                              ],
                             ),
                     ],
                   ),
@@ -185,6 +254,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                       IconButton(
                         onPressed: () {
+                          _sharedPreferencesUpdate();
                           _loadCards();
                         },
                         icon: Icon(Icons.refresh),

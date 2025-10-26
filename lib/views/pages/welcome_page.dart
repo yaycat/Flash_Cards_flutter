@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/data/constants.dart';
+import 'package:flutter_app/views/pages/login_page.dart';
 import 'package:flutter_app/views/pages/widget_tree.dart';
 import 'package:lottie/lottie.dart';
 
@@ -24,6 +25,16 @@ class WelcomePage extends StatelessWidget {
               );
             },
             child: const Text('Start'),
+          ),
+
+          OutlinedButton(
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginPage()),
+              );
+            },
+            child: const Text('Login'),
           ),
           SizedBox(height: 24),
         ],

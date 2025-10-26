@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -38,6 +39,18 @@ class _CardChangeState extends State<CardChange> {
   }
 
   Future<bool> _saveChanges() async {
+    final user = FirebaseAuth.instance.currentUser?.uid;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text('User not authenticated. Please log in.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return false;
+    }
+
     if (_frontController.text.isEmpty || _backController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -51,17 +64,13 @@ class _CardChangeState extends State<CardChange> {
     final prefs = await SharedPreferences.getInstance();
     final List<String> cards = prefs.getStringList(widget.collectionKey) ?? [];
 
-    final originalData = {
-      'front': widget.frontText,
-      'back': widget.backText,
-      'collection': widget.collectionKey,
-    };
+    final originalData = {'front': widget.frontText, 'back': widget.backText};
     final String originalCardJson = jsonEncode(originalData);
     final int cardIndexToUpdate = cards.indexOf(originalCardJson);
 
     if (cardIndexToUpdate == -1) {
-      print(widget.collectionKey);
-      print(originalCardJson);
+      debugPrint(widget.collectionKey);
+      debugPrint(originalCardJson);
       print(cards);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -75,12 +84,18 @@ class _CardChangeState extends State<CardChange> {
       final updatedCardData = {
         'front': _frontController.text,
         'back': _backController.text,
-        'collection': widget.collectionKey,
       };
 
       cards[cardIndexToUpdate] = jsonEncode(updatedCardData);
 
       await prefs.setStringList(widget.collectionKey, cards);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text('Card updated successfully.'),
+          backgroundColor: Colors.green,
+        ),
+      );
       return true;
     } else {
       return false;
